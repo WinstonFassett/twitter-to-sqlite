@@ -411,6 +411,7 @@ def ensure_tables(db):
 def save_tweets(db, tweets, favorited_by=None):
     ensure_tables(db)
     for tweet in tweets:
+        entities = tweet.get("entities")
         transform_tweet(tweet)
         user = tweet.pop("user")
         transform_user(user)
@@ -444,6 +445,18 @@ def save_tweets(db, tweets, favorited_by=None):
                 # TODO: Remove this line when .m2m() grows alter=True
                 db["media"].insert(media, pk="id", alter=True, replace=True)
                 table.m2m("media", media, pk="id")
+
+        if entities and entities.get("urls"):
+            for url in entities["urls"]:
+                url.pop("indices")
+                db["urls"].insert(url, pk="url", alter=True, replace=True)
+                table.m2m("urls", url, pk="url")
+
+        if entities and entities.get("hashtags"):
+            for hashtag in entities["hashtags"]:
+                hashtag.pop("indices")
+                db["hashtags"].insert(hashtag, pk="text", alter=True, replace=True)
+                table.m2m("hashtags", hashtag, pk="text")                
 
 
 def save_users(db, users, followed_id=None, follower_id=None):
